@@ -1,3 +1,13 @@
+## ⚠️ Important Disclaimer: Structural Hardening Risks
+
+This tool implements **Structural Blocking** to mitigate **CVE-2026-31431** by physically renaming kernel modules and purging them from memory. Before use, please be aware of the following architectural risks:
+
+*   **Kernel Update Volatility**: Hardening effects are **temporary**. A kernel update will deploy fresh, vulnerable modules under a new `/lib/modules/` directory, rendering the previous obstruction void.
+*   **Functional Side Effects**: Disabling `AF_ALG` (Kernel Crypto API) may break specific applications or services that rely on kernel-level hardware acceleration (e.g., specialized VPNs, disk encryption utilities, or custom security tools).[cite: 3]
+*   **Mitigation vs. Patching**: This is a **workaround**, not a permanent patch. It is intended to bridge the gap until a distribution-provided patched kernel is available.
+
+**Use at your own risk.** Always verify your system's critical functions after running `solution.sh`.[cite: 3]
+
 # SSIA - System Structural Integrity Audit
 
 A tool kit for discovering, diagnosing, and containing LPE (Local Privilege Escalation) vectors through the Linux Kernel Crypto API (`AF_ALG`).
