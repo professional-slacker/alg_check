@@ -33,6 +33,17 @@ This repository provides two scripts that form a **diagnose → contain → veri
 sudo ./solution.sh
 ```
 
+## ⚠️ WARNING
+
+**Running `solution.sh` on a live system that actively uses AF_ALG (e.g., a system with IPsec, dm-crypt/LUKS, or any hardware crypto offload) will instantly break all kernel crypto operations.** This includes:
+
+- IPsec VPN connections and WireGuard
+- Disk encryption (LUKS/dm-crypt)
+- TLS termination using kernel-backed crypto
+- Any container or application relying on `algif_*` socket interfaces
+
+The script force-unloads AF_ALG kernel modules. Kernel crypto operations will fail until reboot. This script is intended **only for air-gapped, non-production, or disposable systems** for testing and analysis purposes. Do not run it on production or critical infrastructure.
+
 ## Requirements
 
 - Linux (any distribution)
