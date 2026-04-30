@@ -12,12 +12,23 @@ This tool implements **Structural Blocking** to mitigate **CVE-2026-31431** by p
 
 A tool kit for discovering, diagnosing, and containing LPE (Local Privilege Escalation) vectors through the Linux Kernel Crypto API (`AF_ALG`).
 
+## ⚠️ Important Disclaimer: Structural Hardening Risks
+
+The tool uses **Structural Blocking** to address CVE-2026-31431 by renaming kernel modules and purging them from memory. Key architectural risks include:
+
+- **Kernel Update Volatility**: Effects are temporary. A kernel update deploys fresh vulnerable modules under a new `/lib/modules/` directory, rendering the previous obstruction void.
+- **Functional Side Effects**: Disabling AF_ALG may disrupt services relying on kernel-level hardware acceleration, such as specialized VPNs, disk encryption utilities, or custom security tools.
+- **Mitigation vs. Patching**: This is a **workaround, not a permanent patch** meant to serve as a bridge until a patched kernel is available.
+
+Use at your own risk.
+
 ## Overview
 
 This repository provides two scripts that form a **diagnose → contain → verify** workflow against privilege escalation attacks via `AF_ALG` (`socket(38, 5, 0)`):
 
 - **`check.sh`** — Multi-layer security posture audit (runs unprivileged)
 - **`solution.sh`** — Force-evicts AF_ALG modules from memory + checks for physical module files (root required)
+- **`restore.sh`** — Re-loads AF_ALG modules and restores the system to pre-solution.sh state (root required)
 
 ## Checks
 
@@ -43,6 +54,16 @@ This repository provides two scripts that form a **diagnose → contain → veri
 sudo ./solution.sh
 ```
 
+### Restore (root required)
+
+```bash
+sudo ./restore.sh
+```
+
+## Restore
+
+`restore.sh` reverses the effects of `solution.sh` by reloading the AF_ALG kernel modules (`af_alg`, `algif_rng`, `algif_aead`, `algif_skcipher`, `algif_hash`). If the physical module file (`af_alg.ko.xz`) was renamed or removed, the script will warn you and prompt for manual restoration before attempting to load modules.
+
 ## ⚠️ WARNING
 
 **Running `solution.sh` on a live system that actively uses AF_ALG (e.g., a system with IPsec, dm-crypt/LUKS, or any hardware crypto offload) will instantly break all kernel crypto operations.** This includes:
@@ -59,6 +80,7 @@ The script force-unloads AF_ALG kernel modules. Kernel crypto operations will fa
 - Linux (any distribution)
 - `check.sh` requires no dependencies beyond POSIX shell and `/proc`/`/sys`
 - `solution.sh` requires root privileges
+- `restore.sh` requires root privileges
 
 ## Mitigation
 
