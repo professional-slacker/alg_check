@@ -82,6 +82,14 @@ The script force-unloads AF_ALG kernel modules. Kernel crypto operations will fa
 - `solution.sh` requires root privileges
 - `restore.sh` requires root privileges
 
+## WSL2 Notes
+
+This POC has been tested on WSL2. Be aware of the following:
+
+- **WSL2 resets all state on reboot (`wsl --shutdown`)**. This includes kernel module state changes from `solution.sh`, file renames, `check.sh` results, and any local file modifications in this repository.
+- For permanent hardening on WSL2, consider configuring `.wslconfig`, `/etc/wsl.conf`, or an auto-start script (e.g., `/etc/rc.local`) separately.
+- WSL2 is suitable for testing and validation purposes but **not for production use or persistent security mitigation**.
+
 ## Mitigation
 
 To definitively close the AF_ALG attack vector:
