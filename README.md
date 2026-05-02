@@ -81,6 +81,7 @@ The script force-unloads AF_ALG kernel modules. Kernel crypto operations will fa
 - `check.sh` requires no dependencies beyond POSIX shell and `/proc`/`/sys`
 - `solution.sh` requires root privileges
 - `restore.sh` requires root privileges
+- `af_alg_block.so` requires root privileges to install via `/etc/ld.so.preload`
 
 ## WSL2 Notes
 
@@ -115,6 +116,17 @@ To definitively close the AF_ALG attack vector:
    ```bash
    sudo sysctl -w kernel.unprivileged_userns_clone=0
    ```
+
+5. **Block AF_ALG at the `socket()` syscall via `LD_PRELOAD`** (WSL2 workaround):
+   ```bash
+   # Install system-wide (requires root)
+   echo /absolute/path/to/af_alg_block.so | sudo tee -a /etc/ld.so.preload
+   ```
+   A prebuilt shared library (`af_alg_block.so`) is included in the repository. It intercepts `socket(2)` and returns `EAFNOSUPPORT` when the domain is `AF_ALG` (38). All other socket calls pass through to the real implementation unchanged.
+
+   This approach is primarily intended for WSL2 where single-user semantics and reset-on-reboot behavior make system-wide `LD_PRELOAD` practical. On traditional multi-user Linux systems, prefer method 1 (module blacklisting) instead — injecting via `/etc/ld.so.preload` affects every process on the system and may silently break AF_ALG-dependent services.
+
+   **Note:** Requires glibc (not musl). `/etc/ld.so.preload` requires root to modify. Removal is done by deleting the corresponding line from the file.
 
 ## License
 
