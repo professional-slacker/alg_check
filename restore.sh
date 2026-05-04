@@ -43,13 +43,35 @@ done
 
 # 3. Final verification
 echo -e "\n[Step 2: Verifying AF_ALG socket is functional again]"
-python3 -c "import socket; s = socket.socket(38, 5, 0); print('OK'); s.close()" 2>/dev/null
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}VERIFIED: AF_ALG socket creation succeeded.${NC}"
-    echo -e "${GREEN}RESULT: System has been restored to pre-solution.sh state.${NC}"
+if ! command -v python3 >/dev/null 2>&1; then
+    echo -e "${YELLOW}UNVERIFIED: python3 is not installed. Cannot test AF_ALG socket.${NC}"
+    echo -e "${YELLOW}RESULT: Install python3 or verify manually.${NC}"
 else
-    echo -e "${RED}ALERT: AF_ALG socket still rejected.${NC}"
-    echo -e "${RED}Check that all module files exist on disk and were loaded.${NC}"
+    RESULT=$(python3 -c "
+import sys
+try:
+    import socket
+except ImportError:
+    sys.exit(2)
+try:
+    s = socket.socket(38, 5, 0)
+    s.close()
+    sys.exit(0)
+except OSError:
+    sys.exit(1)
+" 2>&1)
+    RC=$?
+    if [ $RC -eq 0 ]; then
+        echo -e "${GREEN}VERIFIED: AF_ALG socket creation succeeded.${NC}"
+        echo -e "${GREEN}RESULT: System has been restored to pre-solution.sh state.${NC}"
+    elif [ $RC -eq 1 ]; then
+        echo -e "${RED}ALERT: AF_ALG socket still rejected.${NC}"
+        echo -e "${RED}Check that all module files exist on disk and were loaded.${NC}"
+    else
+        echo -e "${YELLOW}UNVERIFIED: Python socket module unavailable.${NC}"
+        echo -e "${YELLOW}DETAIL: $RESULT${NC}"
+        echo -e "${YELLOW}RESULT: Cannot confirm AF_ALG restoration status.${NC}"
+    fi
 fi
 
 echo -e "\n${YELLOW}====================================================${NC}"

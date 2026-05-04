@@ -26,12 +26,33 @@ fi
 echo -e "\n[Layer 2: Communication Interface]"
 echo -n "AF_ALG (Crypto API) Accessibility: "
 # AF_ALG=38. SOCK_SEQPACKET=5.
-python3 -c "import socket; socket.socket(38, 5, 0)" 2>/dev/null
-if [ $? -eq 0 ]; then
-    echo -e "${RED}EXPOSED (Unprivileged users can reach Kernel Crypto API)${NC}"
-    echo -e "  > Risk: Direct vector for CVE-2026-31431 (copy-fail)${NC}"
+if ! command -v python3 >/dev/null 2>&1; then
+    echo -e "${YELLOW}UNKNOWN (python3 not installed — cannot test AF_ALG socket)${NC}"
+    echo -e "  > Install python3 or manually test: socket(AF_ALG, SOCK_SEQPACKET, 0)"
 else
-    echo -e "${GREEN}SECURE (Socket creation denied)${NC}"
+    RESULT=$(python3 -c "
+import sys
+try:
+    import socket
+except ImportError:
+    sys.exit(2)
+try:
+    s = socket.socket(38, 5, 0)
+    s.close()
+    sys.exit(0)
+except OSError:
+    sys.exit(1)
+" 2>&1)
+    RC=$?
+    if [ $RC -eq 0 ]; then
+        echo -e "${RED}EXPOSED (Unprivileged users can reach Kernel Crypto API)${NC}"
+        echo -e "  > Risk: Direct vector for CVE-2026-31431 (copy-fail)${NC}"
+    elif [ $RC -eq 1 ]; then
+        echo -e "${GREEN}SECURE (Socket creation denied)${NC}"
+    else
+        echo -e "${YELLOW}UNKNOWN (Python socket module unavailable — cannot test AF_ALG socket)${NC}"
+        echo -e "  > Detail: $RESULT"
+    fi
 fi
 
 # 3. Information Leakage (Kernel Address Space)
